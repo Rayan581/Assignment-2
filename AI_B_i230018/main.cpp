@@ -1,10 +1,13 @@
-#include<iostream>
+#include <iostream>
+#include "gameComponents.h"
 
 using namespace std;
 
 int main()
 {
-    int n;
-    int a;
+    Grid grid(5);
+
+    grid.print();
+
     return 0;
 }
