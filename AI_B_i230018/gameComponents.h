@@ -77,46 +77,4 @@ public:
     }
 };
 
-// Implementing the grid class consisting of cells, using linked list, where each node contains address of sorrounding nodes
-class Grid
-{
-private:
-    // Node structure for linked list
-    struct Node
-    {
-        Cell cell;
-        Node *up;
-        Node *down;
-        Node *left;
-        Node *right;
-
-        Node() {};
-    };
-    Node *head;
-    Node *tail;
-    int size;
-
-public:
-    Grid(int size)
-    {
-        head = nullptr;
-        tail = nullptr;
-        this->size = size;
-
-        // Initialize the grid with empty cells
-        for (int i = 0; i < size; i++)
-        {
-            for(int j = 0; j < size; j++)
-            {
-                Node *node = new Node();
-                node->cell = Cell(i, j, ' ');
-                if(head==nullptr)
-                {
-                     
-                }
-            }
-        }
-    };
-};
-
 #endif
