@@ -2,6 +2,7 @@
 #define GAME_COMPONENTS_H
 
 #include <iostream>
+#include <ctime>
 
 using namespace std;
 
@@ -11,13 +12,19 @@ struct Pos
     int x, y;
 
     // Sets both x and y of a cell
-    void setPos(int x, int y)
+    void set_pos(int x, int y)
     {
         this->x = x;
         this->y = y;
     }
+
+    bool isEqual(Pos other)
+    {
+        return x == other.x && y == other.y;
+    }
 };
 
+// Implements the cell structure
 class Cell
 {
 private:
@@ -29,19 +36,19 @@ public:
     Cell() {}
     Cell(int x, int y, char symbol)
     {
-        pos.setPos(x, y);
+        pos.set_pos(x, y);
         this->symbol = symbol;
         isOccupied = (symbol == ' ') ? false : true;
     }
 
     // Returns the position of a cell in the grid
-    Pos getPos()
+    Pos get_pos()
     {
         return pos;
     }
 
     // Returns the character in the cell
-    char getSymbol()
+    char get_symbol()
     {
         return symbol;
     }
@@ -53,30 +60,292 @@ public:
     }
 
     // Sets the x and y coordinates of the cell
-    void setPos(int x, int y)
+    void set_pos(int x, int y)
     {
-        pos.setPos(x, y);
+        pos.set_pos(x, y);
     }
 
     // Sets the x coordinate of the cell
-    void setX(int x)
+    void set_x(int x)
     {
         pos.x = x;
     }
 
     // Sets the y coordinate of the cell
-    void setY(int y)
+    void set_y(int y)
     {
         pos.y = y;
     }
 
+    // Sets the symbol in the cell
+    void set_symbol(char symbol)
+    {
+        this->symbol = symbol;
+    }
+
     // Sets the occupied state of the cell
-    void setOccupied(bool flag)
+    void set_occupied(bool flag)
     {
         isOccupied = flag;
     }
 };
 
+// Implements a 1D list
+template <typename type>
+class List
+{
+    struct Node
+    {
+        type data;
+        Node *next;
+    };
+    Node *head;
+    Node *tail;
+    int size;
+
+public:
+    List()
+    {
+        head = nullptr;
+        tail = nullptr;
+        size = 0;
+    }
+
+    // Appends an element to end
+    void add(type data)
+    {
+        Node *newNode = new Node;
+        newNode->data = data;
+        newNode->next = nullptr;
+        if (head == nullptr)
+        {
+            head = newNode;
+            tail = newNode;
+        }
+        else
+        {
+            tail->next = newNode;
+            tail = newNode;
+        }
+        size++;
+    }
+
+    // Inserts an element at index
+    void add(type data, int index)
+    {
+        if (index < 0 || index > size)
+            throw std::out_of_range("Index out of range");
+
+        Node *newNode = new Node;
+        newNode->data = data;
+        if (index == 0)
+        {
+            newNode->next = head;
+            head = newNode;
+        }
+        else if (index == size - 1)
+        {
+            add(data);
+            size--;
+        }
+        else
+        {
+            Node *current = head;
+            for (int i = 0; i < index - 1; i++)
+                current = current->next;
+            newNode->next = current->next;
+            current->next = newNode;
+        }
+        size++;
+    }
+
+    // Returns if the list is empty
+    bool isEmpty()
+    {
+        return head == nullptr;
+    }
+
+    // Removes and returns the last element in the list
+    type pop()
+    {
+        if (isEmpty())
+            throw std::out_of_range("List is empty");
+
+        type data;
+
+        if (head == tail)
+        {
+            data = head->data;
+            delete head;
+            head = nullptr;
+            tail = nullptr;
+        }
+        else
+        {
+            Node *current = head;
+
+            while (current->next != tail)
+                current = current->next;
+
+            data = tail->data;
+            delete tail;
+            tail = current;
+            tail->next = nullptr;
+        }
+
+        size--;
+        return data;
+    }
+
+    // Removes and returns an element at index
+    type pop(int index)
+    {
+        if (index < 0 || index >= size)
+            throw std::out_of_range("Index out of range");
+
+        type data;
+
+        if (index == 0)
+        {
+            Node *temp = head;
+            data = head->data;
+            head = head->next;
+            if (head == nullptr)
+                tail = nullptr;
+            delete temp;
+        }
+        else if (index == size - 1)
+        {
+            data = pop();
+            return data;
+        }
+        else
+        {
+            Node *current = head;
+            for (int i = 0; i < index - 1; i++)
+                current = current->next;
+
+            Node *temp = current->next;
+            data = temp->data;
+            current->next = temp->next;
+
+            if (temp == tail)
+                tail = current;
+
+            delete temp;
+        }
+
+        size--;
+        return data;
+    }
+
+    // Removes the first occurence of an element
+    void remove(type value)
+    {
+        if (isEmpty())
+            throw std::out_of_range("List is empty");
+
+        Node *current = head;
+        Node *previous = nullptr;
+
+        // If the element to remove is the head
+        if (head->data == value)
+        {
+            head = head->next;
+            if (head == nullptr)
+                tail = nullptr;
+            delete current;
+            size--;
+            return;
+        }
+
+        // Traverse the list to find the element
+        while (current != nullptr && current->data != value)
+        {
+            previous = current;
+            current = current->next;
+        }
+
+        // If the element is not found
+        if (current == nullptr)
+            throw std::invalid_argument("Element not found in the list");
+
+        previous->next = current->next;
+
+        if (current == tail)
+            tail = previous;
+
+        delete current;
+        size--;
+    }
+
+    // Removes all occurences of an element
+    void remove_all(type value)
+    {
+        if (isEmpty())
+            throw std::out_of_range("List is empty");
+
+        Node *current = head;
+        Node *previous = nullptr;
+
+        while (current != nullptr)
+        {
+            if (current->data == value)
+            {
+                Node *temp = current;
+
+                if (current == head)
+                {
+                    head = current->next;
+                    if (head == nullptr)
+                        tail = nullptr;
+                }
+                else
+                {
+                    previous->next = current->next;
+                    if (current == tail)
+                        tail = previous;
+                }
+
+                current = current->next;
+                delete temp;
+                size--;
+            }
+            else
+            {
+                previous = current;
+                current = current->next;
+            }
+        }
+    }
+
+    // Returns an element at an index
+    type at(int index)
+    {
+        if (index < 0 || index >= size)
+            throw std::out_of_range("Index out of range");
+
+        Node *current = head;
+        for (int i = 0; i < index; i++)
+            current = current->next;
+
+        return current->data;
+    }
+
+    // Prints elements of list
+    void print()
+    {
+        Node *current = head;
+        while (current != nullptr)
+        {
+            cout << current->data << " ";
+            current = current->next;
+        }
+        cout << endl;
+    }
+};
+
+// Implements a 2D list for the maze game
 class TwoDlist
 {
 private:
@@ -89,7 +358,6 @@ private:
         Node *down;
     };
     Node *head;
-    Node *tail;
     Node *current;
     Pos currentPos;
     int size;
@@ -98,18 +366,17 @@ public:
     TwoDlist()
     {
         head = nullptr;
-        tail = nullptr;
         current = nullptr;
-        currentPos.setPos(0, 0);
+        currentPos.set_pos(0, 0);
     }
 
-    void setSize(int size)
+    void set_size(int size)
     {
-        this->size;
+        this->size = size;
     }
 
     // Adds an element to right of current pointer
-    void addRight(char symbol)
+    void add_right(char symbol)
     {
         Node *newNode = new Node;
         newNode->cell = Cell(currentPos.x + 1, currentPos.y, symbol);
@@ -122,7 +389,6 @@ public:
         if (current == nullptr)
         {
             head = newNode;
-            tail = newNode;
             current = newNode;
         }
         else
@@ -142,16 +408,16 @@ public:
             newNode->down = (current->down != nullptr) ? current->down->right : nullptr;
             if (newNode->down != nullptr)
                 newNode->down->up = newNode;
-            current->cell.setX(current->cell.getPos().x + 1);
+            current->cell.set_y(current->cell.get_pos().y + 1);
             current = newNode;
         }
     }
 
     // Adds an element to down of current pointer
-    void addDown(char symbol)
+    void add_down(char symbol)
     {
         Node *newNode = new Node;
-        newNode->cell = Cell(currentPos.x, currentPos.y - 1, symbol);
+        newNode->cell = Cell(currentPos.x + 1, currentPos.y, symbol);
         newNode->left = nullptr;
         newNode->right = nullptr;
         newNode->up = nullptr;
@@ -161,7 +427,6 @@ public:
         if (current == nullptr)
         {
             head = newNode;
-            tail = newNode;
             current = newNode;
         }
         else
@@ -181,12 +446,13 @@ public:
             newNode->right = (current->right != nullptr) ? current->right->down : nullptr;
             if (newNode->right != nullptr)
                 newNode->right->left = newNode;
-            current->cell.setY(current->cell.getPos().y - 1);
+            current->cell.set_x(current->cell.get_pos().x + 1);
             current = newNode;
         }
     }
 
-    void moveTo(int x, int y)
+    // Moves the current pointer to the given coordinates
+    void move_to(int x, int y)
     {
         Node *temp = head;
 
@@ -211,22 +477,49 @@ public:
         }
     }
 
-    void printList()
+    // Places a character at given coordinates
+    void place_char(int x, int y, char symbol)
+    {
+        move_to(x, y);
+        current->cell.set_symbol(symbol);
+    }
+
+    void print_list()
     {
         if (head == nullptr)
             return;
 
         Node *row = head;
+        int x = 0, y = 0;
         while (row != nullptr) // Traverse rows
         {
+            x = 0;
             Node *current = row;
+            if (row == head)
+            {
+                for (int i = 0; i < size + 2; i++)
+                    cout << " # ";
+                cout << endl;
+            }
             while (current != nullptr) // Traverse columns
             {
-                cout << "[ " << current->cell.getSymbol() << " ]";
+                if (current == row)
+                    cout << " # ";
+                cout << " " << current->cell.get_symbol() << " ";
+                if (x == size - 1)
+                    cout << " # ";
                 current = current->right;
+                x++;
             }
             cout << endl;
+            if (y == size - 1)
+            {
+                for (int i = 0; i < size + 2; i++)
+                    cout << " # ";
+                cout << endl;
+            }
             row = row->down; // Move down to the next row
+            y++;
         }
     }
 };
@@ -241,20 +534,46 @@ public:
     Grid(int size)
     {
         this->size = size;
-        grid.setSize(size);
+        grid.set_size(size);
 
         for (int i = 0; i < size; i++)
         {
-            grid.addDown(' ');
+            grid.add_down('.');
             for (int j = 0; j < size - 1; j++)
-                grid.addRight(' ');
-            grid.moveTo(i, 0);
+                grid.add_right('.');
+            grid.move_to(i, 0);
+        }
+    }
+
+    void initialize_grid(int level)
+    {
+        srand(time(nullptr));
+        switch (level)
+        {
+        case 1:
+            int coins = 3;
+            int bombs = 3;
+
+            Pos door;
+            door.set_pos(rand() % size, rand() % size);
+
+            Pos key;
+            do
+            {
+                key.set_pos(rand() % size, rand() % size);
+            } while (key.isEqual(door));
+
+            Pos player;
+            do
+            {
+                player.set_pos(rand() % size, rand() % size);
+            } while (player.isEqual(key) || player.isEqual(door));
         }
     }
 
     void print()
     {
-        grid.printList();
+        grid.print_list();
     }
 };
 
