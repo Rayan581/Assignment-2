@@ -12,6 +12,15 @@ struct Pos
 {
     int x, y;
 
+    Pos() {}
+
+    // Intializes the position with the given x and y coordinates
+    Pos(int x, int y)
+    {
+        this->x = x;
+        this->y = y;
+    }
+
     // Sets both x and y of a cell
     void set_pos(int x, int y)
     {
@@ -32,7 +41,7 @@ class Cell
 private:
     Pos pos;
     char symbol;
-    bool isOccupied;
+    bool is_hidden;
 
 public:
     Cell() {}
@@ -40,7 +49,7 @@ public:
     {
         pos.set_pos(x, y);
         this->symbol = symbol;
-        isOccupied = (symbol == ' ') ? false : true;
+        is_hidden = false;
     }
 
     // Returns the position of a cell in the grid
@@ -56,9 +65,9 @@ public:
     }
 
     // Returns the occupied state of the cell
-    bool is_occupied()
+    bool hidden_status()
     {
-        return isOccupied;
+        return is_hidden;
     }
 
     // Sets the x and y coordinates of the cell
@@ -83,12 +92,14 @@ public:
     void set_symbol(char symbol)
     {
         this->symbol = symbol;
+        if (symbol == 'K' || symbol == 'D')
+            is_hidden = true;
     }
 
     // Sets the occupied state of the cell
-    void set_occupied(bool flag)
+    void set_hidden(bool flag)
     {
-        isOccupied = flag;
+        is_hidden = flag;
     }
 };
 
@@ -262,7 +273,7 @@ public:
         }
 
         // Traverse the list to find the element
-        while (current != nullptr && current->data != value)
+        while (current != nullptr && !(current->data == value))
         {
             previous = current;
             current = current->next;
@@ -347,6 +358,13 @@ public:
         return false;
     }
 
+    // Clears the list
+    void clear()
+    {
+        while (!isEmpty())
+            pop();
+    }
+
     // Prints elements of list
     void print()
     {
@@ -357,6 +375,79 @@ public:
             current = current->next;
         }
         cout << endl;
+    }
+};
+
+// Implements a stack
+template <typename type>
+class Stack
+{
+private:
+    struct Node
+    {
+        type data;
+        Node *next;
+    };
+    Node *top;
+    int size;
+
+public:
+    Stack()
+    {
+        top = nullptr;
+        size = 0;
+    }
+
+    // Pushes an element onto the stack
+    void push(type data)
+    {
+        Node *newNode = new Node;
+        newNode->data = data;
+        newNode->next = top;
+        top = newNode;
+        size++;
+    }
+
+    // Returns if the stack is empty
+    bool isEmpty()
+    {
+        return top == nullptr;
+    }
+
+    // Pops and returns the top element from the stack
+    type pop()
+    {
+        if (isEmpty())
+            return type();
+
+        type data = top->data;
+        Node *temp = top;
+        top = top->next;
+        delete temp;
+        size--;
+        return data;
+    }
+
+    // Returns the top element from the stack
+    type peek()
+    {
+        if (isEmpty())
+            return type();
+
+        return top->data;
+    }
+
+    // Clears the stack
+    void clear()
+    {
+        while (!isEmpty())
+            pop();
+    }
+
+    // Returns the number of elements in the stack
+    int get_size()
+    {
+        return size;
     }
 };
 
@@ -394,7 +485,7 @@ public:
     void add_right(char symbol)
     {
         Node *newNode = new Node;
-        newNode->cell = Cell(currentPos.x + 1, currentPos.y, symbol);
+        newNode->cell = Cell(currentPos.x, currentPos.y + 1, symbol);
         newNode->left = nullptr;
         newNode->right = nullptr;
         newNode->up = nullptr;
@@ -466,6 +557,29 @@ public:
         }
     }
 
+    // Clear the list
+    void clear()
+    {
+        Node *current = head;
+        Node *row = head;
+
+        while (row != nullptr)
+        {
+            Node *temp = row;
+            row = row->down;
+            while (temp != nullptr)
+            {
+                Node *next = temp->right;
+                delete temp;
+                temp = next;
+            }
+        }
+        head = nullptr;
+        current = nullptr;
+        currentPos.set_pos(0, 0);
+        size = 0;
+    }
+
     // Moves the current pointer to the given coordinates
     void move_to(int x, int y)
     {
@@ -499,6 +613,14 @@ public:
         current->cell.set_symbol(symbol);
     }
 
+    // Hides or unhides the character at given coordinates
+    void toggle_hide(Pos pos)
+    {
+        move_to(pos.x, pos.y);
+        current->cell.set_hidden(true);
+    }
+
+    // Prints the 2D list
     void print_list()
     {
         if (head == nullptr)
@@ -520,7 +642,12 @@ public:
             {
                 if (current == row)
                     printw(" # ");
-                printw(" %c", current->cell.get_symbol());
+                if (!current->cell.hidden_status())
+                    printw(" %c", current->cell.get_symbol());
+                else if (current->cell.get_symbol() == 'P')
+                    printw(" %c", current->cell.get_symbol());
+                else
+                    printw(" .");
                 printw(" ");
 
                 if (x == size - 1)
@@ -542,84 +669,384 @@ public:
     }
 };
 
+class Player
+{
+private:
+    Pos pos;
+    bool key_state;
+    Stack<Pos> collectedCoins;
+    Stack<Pos> hittedBombs;
+    int moves;
+    int undos;
+    int score;
+
+public:
+    Player()
+    {
+        key_state = false;
+        pos.set_pos(0, 0);
+        moves = 0;
+        undos = 0;
+        score = 0;
+    }
+
+    // Sets the position of the player
+    void set_pos(Pos pos)
+    {
+        this->pos = pos;
+    }
+
+    // Returns the position of the player
+    Pos get_pos()
+    {
+        return pos;
+    }
+
+    // Returns if the player has the key
+    bool has_key()
+    {
+        return key_state;
+    }
+
+    // Sets the key status
+    void key_status(bool status)
+    {
+        key_state = status;
+    }
+
+    // Adds a coin to the inventory
+    void add_coin(Pos pos)
+    {
+        collectedCoins.push(pos);
+    }
+
+    // Returns the number of coins collected by the player
+    int get_coins()
+    {
+        return collectedCoins.get_size();
+    }
+
+    // Returns the number of moves
+    int get_moves()
+    {
+        return moves;
+    }
+
+    // Sets the number of moves
+    void set_moves(int moves)
+    {
+        this->moves = moves;
+    }
+
+    // Returns the number of undos
+    int get_undos()
+    {
+        return undos;
+    }
+
+    // Sets the number of undos
+    void set_undos(int undos)
+    {
+        this->undos = undos;
+    }
+
+    // Returns the score
+    int get_score()
+    {
+        return score;
+    }
+
+    // Sets the score
+    void set_score(int score)
+    {
+        if (score < 0)
+            score = 0;
+        this->score = score;
+    }
+
+    // Adds a bomb in the stack
+    void add_bomb(Pos pos)
+    {
+        hittedBombs.push(pos);
+    }
+};
+
 class Grid
 {
 private:
     TwoDlist grid;
+    Pos door;
+    Pos key;
+    Player player;
+    List<Pos> coins;
+    List<Pos> bombs;
     int size;
 
 public:
-    Grid(int size)
+    Grid()
     {
-        this->size = size;
+        size = 10;
         grid.set_size(size);
-
-        for (int i = 0; i < size; i++)
-        {
-            grid.add_down('.');
-            for (int j = 0; j < size - 1; j++)
-                grid.add_right('.');
-            grid.move_to(i, 0);
-        }
     }
 
+    // Initializes the grid with player position, key and door positions, and coins and bombs positions based on current player level
     void initialize_grid(int level)
     {
         srand(time(nullptr));
         switch (level)
         {
         case 1:
+        {
+            // Generates a 2D list of given size
+            for (int i = 0; i < size; i++)
+            {
+                grid.add_down('.');
+                for (int j = 0; j < size - 1; j++)
+                    grid.add_right('.');
+                grid.move_to(i, 0);
+            }
+
             int no_coins = 3;
             int no_bombs = 3;
 
-            Pos door;
+            // Generate position of door
             door.set_pos(rand() % size, rand() % size);
             grid.place_char(door, 'D');
 
-            Pos key;
+            // Generate position of key
             do
             {
                 key.set_pos(rand() % size, rand() % size);
             } while (key == door);
             grid.place_char(key, 'K');
 
-            Pos player;
+            // Generate position of player
             do
             {
-                player.set_pos(rand() % size, rand() % size);
-            } while (player == key || player == door);
-            grid.place_char(player, 'P');
+                player.set_pos(Pos(rand() % size, rand() % size));
+            } while (player.get_pos() == key || player.get_pos() == door);
+            grid.place_char(player.get_pos(), 'P');
 
-            List<Pos> coins;
-            List<Pos> bombs;
-
+            // Generate positions of coins
             for (int i = 0; i < no_coins; i++)
             {
                 Pos coin;
                 do
                 {
                     coin.set_pos(rand() % size, rand() % size);
-                } while (coin == door || coin == key || coin == player || coins.contains(coin));
+                } while (coin == door || coin == key || coin == player.get_pos() || coins.contains(coin));
                 coins.add(coin);
                 grid.place_char(coin, 'C');
             }
 
+            // Generate positions of bombs
             for (int i = 0; i < no_bombs; i++)
             {
                 Pos bomb;
                 do
                 {
                     bomb.set_pos(rand() % size, rand() % size);
-                } while (bomb == door || bomb == key || bomb == player || bombs.contains(bomb) || coins.contains(bomb));
+                } while (bomb == door || bomb == key || bomb == player.get_pos() || bombs.contains(bomb) || coins.contains(bomb));
                 bombs.add(bomb);
                 grid.place_char(bomb, 'B');
             }
+
+            break;
+        }
         }
     }
 
-    void print()
+    // Sets the size of the grid
+    void set_size(int size)
+    {
+        this->size = size;
+        grid.set_size(size);
+    }
+
+    // Moves the player up
+    void move_up()
+    {
+        if (player.get_pos().x - 1 >= 0)
+        {
+            grid.place_char(player.get_pos(), '.');
+            player.set_pos(Pos(player.get_pos().x - 1, player.get_pos().y));
+            grid.place_char(player.get_pos(), 'P');
+        }
+    }
+
+    // Moves the player down
+    void move_down()
+    {
+        if (player.get_pos().x + 1 < size)
+        {
+            grid.place_char(player.get_pos(), '.');
+            player.set_pos(Pos(player.get_pos().x + 1, player.get_pos().y));
+            grid.place_char(player.get_pos(), 'P');
+        }
+    }
+
+    // Moves the player left
+    void move_left()
+    {
+        if (player.get_pos().y - 1 < size)
+        {
+            grid.place_char(player.get_pos(), '.');
+            player.set_pos(Pos(player.get_pos().x, player.get_pos().y - 1));
+            grid.place_char(player.get_pos(), 'P');
+        }
+    }
+
+    // Moves the player right
+    void move_right()
+    {
+        if (player.get_pos().y + 1 < size)
+        {
+            grid.place_char(player.get_pos(), '.');
+            player.set_pos(Pos(player.get_pos().x, player.get_pos().y + 1));
+            grid.place_char(player.get_pos(), 'P');
+        }
+    }
+
+    // Checks the collision of player with other things
+    void check_collision()
+    {
+        collect_key();
+        collect_coin();
+        hit_bomb();
+    }
+
+    // Tells if the player is getting closer to goal or not
+    void getting_closer()
+    {
+    }
+
+    // Checks if the player has reached the key
+    void collect_key()
+    {
+        if (player.get_pos() == key)
+        {
+            player.key_status(true);
+            grid.toggle_hide(player.get_pos());
+            grid.place_char(key, 'P');
+        }
+    }
+
+    // Checks if the player has the key and reached the door
+    bool win_game()
+    {
+        if (player.has_key() && player.get_pos() == door)
+            return true;
+        return false;
+    }
+
+    // Checks if the player has collected a coin
+    void collect_coin()
+    {
+        if (coins.contains(player.get_pos()))
+        {
+            player.add_coin(player.get_pos());
+            player.set_score(player.get_score() + 2); // Add 2 score for each coin
+            coins.remove(player.get_pos());
+            grid.place_char(player.get_pos(), 'P');
+        }
+    }
+
+    // Checks if the player has reached a bomb
+    void hit_bomb()
+    {
+        if (bombs.contains(player.get_pos()))
+        {
+            player.set_moves(player.get_moves() - 1); // Remove 1 move
+            player.set_score(player.get_score() - 5); // Remove 5 score
+            player.add_bomb(player.get_pos());
+            grid.place_char(player.get_pos(), 'P');
+        }
+    }
+
+    // Displays the player stats
+    void display_stats(int level)
+    {
+        if (level == 1)
+            printw("Mode: Easy");
+        else if (level == 2)
+            printw("Mode: Medium");
+        else if (level == 3)
+            printw("Mode: Hard");
+
+        printw("\n");
+        printw("Remaining Moves: ");
+        printw("%d", player.get_moves());
+        printw("\tRemaining Undos: ");
+        printw("%d", player.get_undos());
+        printw("\n");
+        printw("Score: ");
+        printw("%d", player.get_score());
+        printw("\tKey Status: ");
+        if (player.has_key())
+            printw("True");
+        else
+            printw("False");
+        printw("\n");
+    }
+
+    // Displays the game grid
+    void display_grid()
     {
         grid.print_list();
+    }
+};
+
+class Game
+{
+private:
+    Grid grid;
+    int level = 1;
+
+public:
+    Game()
+    {
+        grid.initialize_grid(level);
+        grid.display_stats(level);
+        grid.display_grid();
+    }
+
+    // Moves the player based on the player input
+    void move_player()
+    {
+        int playerInput = getch();
+
+        switch (playerInput)
+        {
+        case 'w':
+            grid.move_up();
+            break;
+        case 's':
+            grid.move_down();
+            break;
+        case 'a':
+            grid.move_left();
+            break;
+        case 'd':
+            grid.move_right();
+            break;
+        }
+
+        grid.check_collision();
+        if (grid.win_game())
+        {
+        }
+    }
+
+    // Runs the main game loop
+    void game_loop()
+    {
+        while (true)
+        {
+            move_player();
+            clear();
+            grid.display_stats(level);
+            grid.display_grid();
+        }
     }
 };
 

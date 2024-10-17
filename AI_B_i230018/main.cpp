@@ -8,13 +8,11 @@ int main()
     initscr();            // Start ncurses mode
     cbreak();             // Disable line buffering
     noecho();             // Don't echo input to the screen
-    keypad(stdscr, TRUE); // Enable function keys
 
-    Grid grid(10);
-    grid.initialize_grid(1);
+    Game game;
+    game.game_loop();
 
-    grid.print();
-
+    getch();
     endwin();
 
     return 0;
