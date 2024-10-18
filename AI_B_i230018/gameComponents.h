@@ -680,6 +680,14 @@ private:
     int score;
     int distance;
 
+    struct Move
+    {
+        Pos previous;
+        Pos current;
+    };
+
+    Stack<Move> moves_stack;
+
 public:
     Player()
     {
@@ -774,6 +782,24 @@ public:
     void set_distance(int distance)
     {
         this->distance = distance;
+    }
+
+    // Adds the move to the moves list
+    void add_move(Pos previous, Pos current)
+    {
+        Move move;
+        move.previous = previous;
+        move.current = current;
+        moves_stack.push(move);
+    }
+
+    // Returns last move's position
+    Pos get_last_move_pos()
+    {
+        if (moves_stack.isEmpty())
+            return Pos(-1, -1);
+
+        return moves_stack.peek().previous;
     }
 };
 
@@ -903,52 +929,96 @@ public:
     }
 
     // Moves the player up
-    void move_up()
+    bool move_up()
     {
+
         if (player.get_pos().x - 1 >= 0)
         {
+            if (player.get_pos().x - 1 == player.get_last_move_pos().x && player.get_pos().y == player.get_last_move_pos().y)
+                return false;
+
+            Pos previous = player.get_pos();
+
             grid.place_char(player.get_pos(), '.');
             player.set_pos(Pos(player.get_pos().x - 1, player.get_pos().y));
             grid.place_char(player.get_pos(), 'P');
             player.set_moves(player.get_moves() - 1);
+
+            Pos current = player.get_pos();
+            player.add_move(previous, current);
         }
+
+        return true;
     }
 
     // Moves the player down
-    void move_down()
+    bool move_down()
     {
+
         if (player.get_pos().x + 1 < size)
         {
+            if (player.get_pos().x + 1 == player.get_last_move_pos().x && player.get_pos().y == player.get_last_move_pos().y)
+                return false;
+
+            Pos previous = player.get_pos();
+
             grid.place_char(player.get_pos(), '.');
             player.set_pos(Pos(player.get_pos().x + 1, player.get_pos().y));
             grid.place_char(player.get_pos(), 'P');
             player.set_moves(player.get_moves() - 1);
+
+            Pos current = player.get_pos();
+            player.add_move(previous, current);
         }
+
+        return true;
     }
 
     // Moves the player left
-    void move_left()
+    bool move_left()
     {
-        printw("%d", player.get_pos().y);
+
         if (player.get_pos().y - 1 >= 0)
         {
+            if (player.get_pos().x == player.get_last_move_pos().x && player.get_pos().y - 1 == player.get_last_move_pos().y)
+                return false;
+
+            Pos previous = player.get_pos();
+
             grid.place_char(player.get_pos(), '.');
             player.set_pos(Pos(player.get_pos().x, player.get_pos().y - 1));
             grid.place_char(player.get_pos(), 'P');
             player.set_moves(player.get_moves() - 1);
+
+            Pos current = player.get_pos();
+            player.add_move(previous, current);
         }
+
+        return true;
     }
 
     // Moves the player right
-    void move_right()
+    bool move_right()
     {
+
         if (player.get_pos().y + 1 < size)
         {
+            cout << "Hello" << endl;
+            if (player.get_pos().x == player.get_last_move_pos().x && player.get_pos().y + 1 == player.get_last_move_pos().y)
+                return false;
+
+            Pos previous = player.get_pos();
+
             grid.place_char(player.get_pos(), '.');
             player.set_pos(Pos(player.get_pos().x, player.get_pos().y + 1));
             grid.place_char(player.get_pos(), 'P');
             player.set_moves(player.get_moves() - 1);
+
+            Pos current = player.get_pos();
+            player.add_move(previous, current);
         }
+
+        return true;
     }
 
     // Checks the collision of player with other things
@@ -1082,23 +1152,27 @@ public:
     }
 
     // Moves the player based on the player input
-    void move_player()
+    bool move_player()
     {
         int playerInput = getch();
+        bool moved = false;
 
         switch (playerInput)
         {
         case 'w':
-            grid.move_up();
+            moved = grid.move_up();
             break;
+
         case 's':
-            grid.move_down();
+            moved = grid.move_down();
             break;
+
         case 'a':
-            grid.move_left();
+            moved = grid.move_left();
             break;
+
         case 'd':
-            grid.move_right();
+            moved = grid.move_right();
             break;
         }
 
@@ -1106,6 +1180,8 @@ public:
         if (grid.win_game())
         {
         }
+
+        return moved;
     }
 
     // Runs the main game loop
@@ -1113,10 +1189,18 @@ public:
     {
         while (true)
         {
-            move_player();
+            bool moved = move_player();
             clear();
+
             grid.display_stats(level);
             grid.display_grid();
+
+            // If last move was not possible, display error message
+            if (!moved)
+            {
+                printw("Cannot move to the last position!\n");
+                printw("Use undo feature to move to the last position!\n");
+            }
         }
     }
 };
