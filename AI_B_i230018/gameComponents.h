@@ -675,10 +675,10 @@ private:
     Pos pos;
     bool key_state;
     Stack<Pos> collectedCoins;
-    Stack<Pos> hittedBombs;
     int moves;
     int undos;
     int score;
+    int distance;
 
 public:
     Player()
@@ -764,10 +764,16 @@ public:
         this->score = score;
     }
 
-    // Adds a bomb in the stack
-    void add_bomb(Pos pos)
+    // Returns the distance
+    int get_distance()
     {
-        hittedBombs.push(pos);
+        return distance;
+    }
+
+    // Sets the distance
+    void set_distance(int distance)
+    {
+        this->distance = distance;
     }
 };
 
@@ -888,7 +894,8 @@ public:
     // Moves the player left
     void move_left()
     {
-        if (player.get_pos().y - 1 < size)
+        printw("%d", player.get_pos().y);
+        if (player.get_pos().y - 1 >= 0)
         {
             grid.place_char(player.get_pos(), '.');
             player.set_pos(Pos(player.get_pos().x, player.get_pos().y - 1));
@@ -918,6 +925,22 @@ public:
     // Tells if the player is getting closer to goal or not
     void getting_closer()
     {
+        int previous_distance = player.get_distance();
+
+        int x = 0, y = 0;
+
+        !(player.has_key()) ? (x = key.x, y = key.y) : (x = door.x, y = door.y);
+        int dx = abs(x - player.get_pos().x);
+        int dy = abs(y - player.get_pos().y);
+
+        int current_distance = dx + dy;
+        player.set_distance(current_distance);
+
+        printw("Hint: ");
+        if (current_distance < previous_distance)
+            printw("Getting Closer!\n");
+        else
+            printw("Further Away!\n");
     }
 
     // Checks if the player has reached the key
@@ -951,15 +974,25 @@ public:
         }
     }
 
+    // Game over function
+    void game_over(const char *message)
+    {
+        printw("\n");
+        printw("%s\n", message);
+        printw("Final Score: ");
+        printw("%d\n", player.get_score());
+        printw("Press any key to exit...");
+        getch();
+        endwin();
+        exit(0);
+    }
+
     // Checks if the player has reached a bomb
     void hit_bomb()
     {
         if (bombs.contains(player.get_pos()))
         {
-            player.set_moves(player.get_moves() - 1); // Remove 1 move
-            player.set_score(player.get_score() - 5); // Remove 5 score
-            player.add_bomb(player.get_pos());
-            grid.place_char(player.get_pos(), 'P');
+            game_over("Hit Bomb!");
         }
     }
 
@@ -987,6 +1020,7 @@ public:
         else
             printw("False");
         printw("\n");
+        getting_closer();
     }
 
     // Displays the game grid
