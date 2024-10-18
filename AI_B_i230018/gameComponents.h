@@ -799,67 +799,76 @@ public:
     void initialize_grid(int level)
     {
         srand(time(nullptr));
+
+        int no_coins = 0;
+        int no_bombs = 0;
+
         switch (level)
         {
         case 1:
         {
-            // Generates a 2D list of given size
-            for (int i = 0; i < size; i++)
-            {
-                grid.add_down('.');
-                for (int j = 0; j < size - 1; j++)
-                    grid.add_right('.');
-                grid.move_to(i, 0);
-            }
+            // Sets the number of coins and bombs to 3
+            no_coins = 3;
+            no_bombs = 3;
 
-            int no_coins = 3;
-            int no_bombs = 3;
-
-            // Generate position of door
-            door.set_pos(rand() % size, rand() % size);
-            grid.place_char(door, 'D');
-
-            // Generate position of key
-            do
-            {
-                key.set_pos(rand() % size, rand() % size);
-            } while (key == door);
-            grid.place_char(key, 'K');
-
-            // Generate position of player
-            do
-            {
-                player.set_pos(Pos(rand() % size, rand() % size));
-            } while (player.get_pos() == key || player.get_pos() == door);
-            grid.place_char(player.get_pos(), 'P');
-
-            // Generate positions of coins
-            for (int i = 0; i < no_coins; i++)
-            {
-                Pos coin;
-                do
-                {
-                    coin.set_pos(rand() % size, rand() % size);
-                } while (coin == door || coin == key || coin == player.get_pos() || coins.contains(coin));
-                coins.add(coin);
-                grid.place_char(coin, 'C');
-            }
-
-            // Generate positions of bombs
-            for (int i = 0; i < no_bombs; i++)
-            {
-                Pos bomb;
-                do
-                {
-                    bomb.set_pos(rand() % size, rand() % size);
-                } while (bomb == door || bomb == key || bomb == player.get_pos() || bombs.contains(bomb) || coins.contains(bomb));
-                bombs.add(bomb);
-                grid.place_char(bomb, 'B');
-            }
-
+            // Grant 6 undo moves
+            player.set_undos(6);
             break;
         }
         }
+
+        // Generates a 2D list of given size
+        for (int i = 0; i < size; i++)
+        {
+            grid.add_down('.');
+            for (int j = 0; j < size - 1; j++)
+                grid.add_right('.');
+            grid.move_to(i, 0);
+        }
+
+        // Generate position of door
+        door.set_pos(rand() % size, rand() % size);
+        grid.place_char(door, 'D');
+
+        // Generate position of key
+        do
+        {
+            key.set_pos(rand() % size, rand() % size);
+        } while (key == door);
+        grid.place_char(key, 'K');
+
+        // Generate position of player
+        do
+        {
+            player.set_pos(Pos(rand() % size, rand() % size));
+        } while (player.get_pos() == key || player.get_pos() == door);
+        grid.place_char(player.get_pos(), 'P');
+
+        // Generate positions of coins
+        for (int i = 0; i < no_coins; i++)
+        {
+            Pos coin;
+            do
+            {
+                coin.set_pos(rand() % size, rand() % size);
+            } while (coin == door || coin == key || coin == player.get_pos() || coins.contains(coin));
+            coins.add(coin);
+            grid.place_char(coin, 'C');
+        }
+
+        // Generate positions of bombs
+        for (int i = 0; i < no_bombs; i++)
+        {
+            Pos bomb;
+            do
+            {
+                bomb.set_pos(rand() % size, rand() % size);
+            } while (bomb == door || bomb == key || bomb == player.get_pos() || bombs.contains(bomb) || coins.contains(bomb));
+            bombs.add(bomb);
+            grid.place_char(bomb, 'B');
+        }
+
+        calculate_init_moves(level);
     }
 
     // Sets the size of the grid
@@ -867,6 +876,30 @@ public:
     {
         this->size = size;
         grid.set_size(size);
+    }
+
+    // Initially gives moves to the player
+    void calculate_init_moves(int level)
+    {
+        // Calculate distance to the key
+        int key_distance = 0;
+        int dx = abs(player.get_pos().x - key.x);
+        int dy = abs(player.get_pos().y - key.y);
+        key_distance = dx + dy;
+
+        // Calculate distance to the door
+        int door_distance = 0;
+        dx = abs(player.get_pos().x - door.x);
+        dy = abs(player.get_pos().y - door.y);
+        door_distance = dx + dy;
+
+        // Calculate total distance
+        int total_distance = key_distance + door_distance;
+
+        // Calculate total moves accorging to total distance and difficulty level
+        int total_moves = total_distance + ((size * size) / (level * level * 5));
+
+        player.set_moves(total_moves);
     }
 
     // Moves the player up
@@ -877,6 +910,7 @@ public:
             grid.place_char(player.get_pos(), '.');
             player.set_pos(Pos(player.get_pos().x - 1, player.get_pos().y));
             grid.place_char(player.get_pos(), 'P');
+            player.set_moves(player.get_moves() - 1);
         }
     }
 
@@ -888,6 +922,7 @@ public:
             grid.place_char(player.get_pos(), '.');
             player.set_pos(Pos(player.get_pos().x + 1, player.get_pos().y));
             grid.place_char(player.get_pos(), 'P');
+            player.set_moves(player.get_moves() - 1);
         }
     }
 
@@ -900,6 +935,7 @@ public:
             grid.place_char(player.get_pos(), '.');
             player.set_pos(Pos(player.get_pos().x, player.get_pos().y - 1));
             grid.place_char(player.get_pos(), 'P');
+            player.set_moves(player.get_moves() - 1);
         }
     }
 
@@ -911,6 +947,7 @@ public:
             grid.place_char(player.get_pos(), '.');
             player.set_pos(Pos(player.get_pos().x, player.get_pos().y + 1));
             grid.place_char(player.get_pos(), 'P');
+            player.set_moves(player.get_moves() - 1);
         }
     }
 
