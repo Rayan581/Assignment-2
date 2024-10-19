@@ -39,6 +39,12 @@ struct Pos
     {
         return x != other.x || y != other.y;
     }
+
+    // Print the position
+    void print() const
+    {
+        printw("(%d, %d)", x, y);
+    }
 };
 
 // Implements the cell structure
@@ -497,7 +503,234 @@ public:
     {
         return size;
     }
+
+    // Prints the elements in the stack
+    void print()
+    {
+        Node *current = top;
+        while (current != nullptr)
+        {
+            cout << current->data << " ";
+            current = current->next;
+        }
+        cout << endl;
+    }
 };
+
+// Prints the stack containing position objects
+template <>
+void MutatedStack<Pos>::print()
+{
+    Node *current = top;
+    while (current != nullptr)
+    {
+        current->data.print();
+        printw(" ");
+        current = current->next;
+    }
+    printw("\n");
+}
+
+#include <iostream>
+#include <ncurses.h> // Assuming you're using ncurses
+using namespace std;
+
+// Implements a queue
+template <typename type>
+class MutatedQueue
+{
+private:
+    struct Node
+    {
+        type data;
+        Node *next;
+    };
+    Node *front;
+    Node *rear;
+    int size;
+
+public:
+    MutatedQueue()
+    {
+        front = nullptr;
+        rear = nullptr;
+        size = 0;
+    }
+
+    // Enqueues an element (adds to the rear)
+    void enqueue(type data)
+    {
+        Node *newNode = new Node;
+        newNode->data = data;
+        newNode->next = nullptr;
+
+        if (isEmpty())
+        {
+            front = newNode;
+            rear = newNode;
+        }
+        else
+        {
+            rear->next = newNode;
+            rear = newNode;
+        }
+
+        size++;
+    }
+
+    // Returns if the queue is empty
+    bool isEmpty()
+    {
+        return front == nullptr;
+    }
+
+    // Dequeues and returns the front element from the queue
+    type dequeue()
+    {
+        if (isEmpty())
+            return type();
+
+        type data = front->data;
+        Node *temp = front;
+        front = front->next;
+        if (front == nullptr)
+            rear = nullptr;
+
+        delete temp;
+        size--;
+        return data;
+    }
+
+    // Removes the last element from the queue
+    type pop()
+    {
+        if (isEmpty())
+            return type();
+
+        type data = rear->data;
+        Node *temp = rear;
+
+        if (front == rear)
+        {
+            front = nullptr;
+            rear = nullptr;
+        }
+        else
+        {
+            Node *current = front;
+            while (current->next != rear)
+                current = current->next;
+
+            rear = current;
+            rear->next = nullptr;
+        }
+
+        delete temp;
+        size--;
+        return data;
+    }
+
+    // Returns the front element
+    type peek_front()
+    {
+        if (isEmpty())
+            return type();
+
+        return front->data;
+    }
+
+    // Returns the rear element
+    type peek_rear()
+    {
+        if (isEmpty())
+            return type();
+
+        return rear->data;
+    }
+
+    // Returns if the queue contains the given element
+    bool contains(type element)
+    {
+        Node *current = front;
+        while (current != nullptr)
+        {
+            if (current->data == element)
+                return true;
+            current = current->next;
+        }
+        return false;
+    }
+
+    // Removes the given element from the queue
+    void remove(type element)
+    {
+        if (isEmpty())
+            return;
+
+        if (front->data == element)
+        {
+            dequeue();
+            return;
+        }
+
+        Node *current = front;
+        Node *previous = nullptr;
+
+        while (current->next != nullptr && current->next->data != element)
+        {
+            previous = current;
+            current = current->next;
+        }
+
+        if (current->next == nullptr)
+            return;
+
+        previous->next = current->next;
+        if (current == rear)
+            rear = previous;
+        delete current;
+        size--;
+    }
+
+    // Clears the queue
+    void clear()
+    {
+        while (!isEmpty())
+            dequeue();
+    }
+
+    // Returns the number of elements in the queue
+    int get_size()
+    {
+        return size;
+    }
+
+    // Prints the elements in the queue
+    void print()
+    {
+        Node *current = front;
+        while (current != nullptr)
+        {
+            cout << current->data << " ";
+            current = current->next;
+        }
+        cout << endl;
+    }
+};
+
+// Prints the queue containing the position objects
+template <>
+void MutatedQueue<Pos>::print()
+{
+    Node *current = front;
+    while (current != nullptr)
+    {
+        current->data.print();
+        printw(" ");
+        current = current->next;
+    }
+    printw("\n");
+}
 
 // Implements a 2D list for the maze game
 class TwoDlist
@@ -661,6 +894,12 @@ public:
         current->cell.set_symbol(symbol);
     }
 
+    char get_char(Pos pos)
+    {
+        move_to(pos.x, pos.y);
+        return current->cell.get_symbol();
+    }
+
     // Hides or unhides the character at given coordinates
     void toggle_hide(Pos pos)
     {
@@ -722,7 +961,7 @@ class Player
 private:
     Pos pos;
     bool key_state;
-    MutatedStack<Pos> collectedCoins;
+    MutatedQueue<Pos> collectedCoins;
     int moves;
     int undos;
     int score;
@@ -773,7 +1012,7 @@ public:
     // Adds a coin to the inventory
     void add_coin(Pos pos)
     {
-        collectedCoins.push(pos);
+        collectedCoins.enqueue(pos);
     }
 
     // Returns the number of coins collected by the player
@@ -815,7 +1054,7 @@ public:
     // Checks if the coins stack contains the given stack
     bool find_in_coins(Pos pos)
     {
-        if (collectedCoins.peek() == pos)
+        if (collectedCoins.peek_rear() == pos)
         {
             collectedCoins.pop();
             return true;
@@ -868,6 +1107,32 @@ public:
             return Pos(-1, -1);
 
         return moves_stack.pop().previous;
+    }
+
+    Pos get_last_coin()
+    {
+        if (collectedCoins.isEmpty())
+            return Pos(-1, -1);
+
+        return collectedCoins.peek_rear();
+    }
+
+    // Returns if the moves stack is empty
+    bool is_move_empty()
+    {
+        return moves_stack.isEmpty();
+    }
+
+    // Prints the positions of the collected coins
+    void print_coins()
+    {
+        collectedCoins.print();
+    }
+
+    // Calculates the score after game end
+    void calculate_score()
+    {
+        score += moves;
     }
 };
 
@@ -1095,6 +1360,7 @@ public:
         collect_key();
         collect_coin();
         hit_bomb();
+        check_moves();
     }
 
     // Tells if the player is getting closer to goal or not
@@ -1142,9 +1408,9 @@ public:
     }
 
     // Undo the last move
-    void undo_move()
+    void undo_move(bool gameOver)
     {
-        if (player.get_undos() > 0)
+        if (player.get_undos() > 0 || gameOver || 1)
         {
             Pos previous = player.pop_last_move_pos();
 
@@ -1161,7 +1427,10 @@ public:
                 grid.place_char(current, 'C');
             }
             else // Else place a space
-                grid.place_char(current, '.');
+            {
+                if (grid.get_char(current) != 'B') // If there was not a bomb
+                    grid.place_char(current, '.');
+            }
 
             player.set_moves(player.get_moves() + 1); // Return the last move used to the player
             grid.place_char(previous, 'P');
@@ -1172,17 +1441,39 @@ public:
     bool win_game()
     {
         if (player.has_key() && player.get_pos() == door)
+        {
+            grid.toggle_hide(player.get_pos());
             return true;
+        }
         return false;
+    }
+
+    // Revert the grid to original state after the game has ended
+    void revert_grid()
+    {
+        while (!player.is_move_empty())
+            undo_move(true);
+        grid.place_char(key, 'K');
+        grid.place_char(door, 'D');
     }
 
     // Game over function
     void game_over(const char *message)
     {
         printw("\n");
+        clear();
         printw("%s\n", message);
-        printw("Final Score: ");
+        printw("Collected Coins:");
+        printw("\t\tRemaining Moves: %d\n", player.get_moves());
+        player.print_coins();
+
+        if (message == "Congratulations! You have reached the door!")
+            player.calculate_score();
+        printw("Score: ");
         printw("%d\n", player.get_score());
+        revert_grid();
+        printw("Original State of the game:\n");
+        display_grid();
         printw("Press any key to exit...");
         getch();
         endwin();
@@ -1194,8 +1485,16 @@ public:
     {
         if (bombs.contains(player.get_pos()))
         {
+            grid.place_char(player.get_pos(), 'B');
             game_over("Hit Bomb!");
         }
+    }
+
+    // Checks if there are no moves left
+    void check_moves()
+    {
+        if (player.get_moves() == 0)
+            game_over("No More Moves!");
     }
 
     // Displays the player stats
@@ -1272,14 +1571,14 @@ public:
             moved = grid.move_right();
             break;
         case 'u':
-            grid.undo_move();
+            grid.undo_move(false);
             break;
         }
 
         grid.check_collision();
         if (grid.win_game())
         {
-            grid.game_over("Congratulations! You Won!");
+            grid.game_over("Congratulations! You have reached the door!");
             return false;
         }
 
