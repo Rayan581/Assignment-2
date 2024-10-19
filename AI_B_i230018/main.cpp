@@ -9,7 +9,7 @@ int main()
     cbreak();             // Disable line buffering
     noecho();             // Don't echo input to the screen
 
-    Game game;
+    Game game(1);
     game.game_loop();
 
     getch();

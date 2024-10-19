@@ -33,6 +33,12 @@ struct Pos
     {
         return x == other.x && y == other.y;
     }
+
+    // Returns if two pos are not equal
+    bool operator!=(const Pos &other) const
+    {
+        return x != other.x || y != other.y;
+    }
 };
 
 // Implements the cell structure
@@ -380,7 +386,7 @@ public:
 
 // Implements a stack
 template <typename type>
-class Stack
+class MutatedStack
 {
 private:
     struct Node
@@ -392,7 +398,7 @@ private:
     int size;
 
 public:
-    Stack()
+    MutatedStack()
     {
         top = nullptr;
         size = 0;
@@ -435,6 +441,48 @@ public:
             return type();
 
         return top->data;
+    }
+
+    // Returns if the stack contains the given element
+    bool contains(type element)
+    {
+        Node *current = top;
+        while (current != nullptr)
+        {
+            if (current->data == element)
+                return true;
+            current = current->next;
+        }
+        return false;
+    }
+
+    // Removes the given element from the stack
+    void remove(type element)
+    {
+        if (isEmpty())
+            return;
+
+        if (top->data == element)
+        {
+            pop();
+            return;
+        }
+
+        Node *current = top;
+        Node *previous = nullptr;
+
+        while (current->next != nullptr && current->next->data != element)
+        {
+            previous = current;
+            current = current->next;
+        }
+
+        if (current->next == nullptr)
+            return;
+
+        previous->next = current->next;
+        delete current;
+        size--;
     }
 
     // Clears the stack
@@ -674,7 +722,7 @@ class Player
 private:
     Pos pos;
     bool key_state;
-    Stack<Pos> collectedCoins;
+    MutatedStack<Pos> collectedCoins;
     int moves;
     int undos;
     int score;
@@ -686,7 +734,7 @@ private:
         Pos current;
     };
 
-    Stack<Move> moves_stack;
+    MutatedStack<Move> moves_stack;
 
 public:
     Player()
@@ -764,6 +812,17 @@ public:
         return score;
     }
 
+    // Checks if the coins stack contains the given stack
+    bool find_in_coins(Pos pos)
+    {
+        if (collectedCoins.peek() == pos)
+        {
+            collectedCoins.pop();
+            return true;
+        }
+        return false;
+    }
+
     // Sets the score
     void set_score(int score)
     {
@@ -800,6 +859,15 @@ public:
             return Pos(-1, -1);
 
         return moves_stack.peek().previous;
+    }
+
+    // Removes last move from the moves list and returns
+    Pos pop_last_move_pos()
+    {
+        if (moves_stack.isEmpty())
+            return Pos(-1, -1);
+
+        return moves_stack.pop().previous;
     }
 };
 
@@ -1061,14 +1129,6 @@ public:
         }
     }
 
-    // Checks if the player has the key and reached the door
-    bool win_game()
-    {
-        if (player.has_key() && player.get_pos() == door)
-            return true;
-        return false;
-    }
-
     // Checks if the player has collected a coin
     void collect_coin()
     {
@@ -1079,6 +1139,41 @@ public:
             coins.remove(player.get_pos());
             grid.place_char(player.get_pos(), 'P');
         }
+    }
+
+    // Undo the last move
+    void undo_move()
+    {
+        if (player.get_undos() > 0)
+        {
+            Pos previous = player.pop_last_move_pos();
+
+            if (previous == Pos(-1, -1))
+                return;
+
+            Pos current = player.get_pos();
+            player.set_pos(previous);
+            player.set_undos(player.get_undos() - 1);
+
+            if (player.find_in_coins(current)) // If there was a coin, place if back
+            {
+                coins.add(current);
+                grid.place_char(current, 'C');
+            }
+            else // Else place a space
+                grid.place_char(current, '.');
+
+            player.set_moves(player.get_moves() + 1); // Return the last move used to the player
+            grid.place_char(previous, 'P');
+        }
+    }
+
+    // Checks if the player has the key and reached the door
+    bool win_game()
+    {
+        if (player.has_key() && player.get_pos() == door)
+            return true;
+        return false;
     }
 
     // Game over function
@@ -1118,6 +1213,7 @@ public:
         printw("%d", player.get_moves());
         printw("\tRemaining Undos: ");
         printw("%d", player.get_undos());
+        printw(" (Press U to use)");
         printw("\n");
         printw("Score: ");
         printw("%d", player.get_score());
@@ -1141,11 +1237,12 @@ class Game
 {
 private:
     Grid grid;
-    int level = 1;
+    int level;
 
 public:
-    Game()
+    Game(int _level)
     {
+        level = _level;
         grid.initialize_grid(level);
         grid.display_stats(level);
         grid.display_grid();
@@ -1155,7 +1252,7 @@ public:
     bool move_player()
     {
         int playerInput = getch();
-        bool moved = false;
+        bool moved = true;
 
         switch (playerInput)
         {
@@ -1174,11 +1271,16 @@ public:
         case 'd':
             moved = grid.move_right();
             break;
+        case 'u':
+            grid.undo_move();
+            break;
         }
 
         grid.check_collision();
         if (grid.win_game())
         {
+            grid.game_over("Congratulations! You Won!");
+            return false;
         }
 
         return moved;
