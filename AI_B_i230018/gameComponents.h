@@ -76,7 +76,7 @@ public:
         return symbol;
     }
 
-    // Returns the occupied state of the cell
+    // Returns the hidden state of the cell
     bool hidden_status()
     {
         return is_hidden;
@@ -108,7 +108,7 @@ public:
             is_hidden = true;
     }
 
-    // Sets the occupied state of the cell
+    // Sets the hidden state of the cell
     void set_hidden(bool flag)
     {
         is_hidden = flag;
@@ -901,10 +901,10 @@ public:
     }
 
     // Hides or unhides the character at given coordinates
-    void toggle_hide(Pos pos)
+    void set_hide(Pos pos, bool hide)
     {
         move_to(pos.x, pos.y);
-        current->cell.set_hidden(true);
+        current->cell.set_hidden(hide);
     }
 
     // Prints the 2D list
@@ -1390,7 +1390,7 @@ public:
         if (player.get_pos() == key)
         {
             player.key_status(true);
-            grid.toggle_hide(player.get_pos());
+            grid.set_hide(player.get_pos(), false);
             grid.place_char(key, 'P');
         }
     }
@@ -1404,6 +1404,7 @@ public:
             player.set_score(player.get_score() + 2); // Add 2 score for each coin
             coins.remove(player.get_pos());
             grid.place_char(player.get_pos(), 'P');
+            player.set_undos(player.get_undos() + 1);
         }
     }
 
@@ -1442,7 +1443,7 @@ public:
     {
         if (player.has_key() && player.get_pos() == door)
         {
-            grid.toggle_hide(player.get_pos());
+            grid.set_hide(player.get_pos(), false);
             return true;
         }
         return false;
@@ -1453,8 +1454,12 @@ public:
     {
         while (!player.is_move_empty())
             undo_move(true);
+
         grid.place_char(key, 'K');
+        grid.set_hide(key, false);
+        printw("%c\n", grid.get_char(key));
         grid.place_char(door, 'D');
+        grid.set_hide(door, false);
     }
 
     // Game over function
