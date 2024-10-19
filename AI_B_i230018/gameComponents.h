@@ -1148,11 +1148,7 @@ private:
     int size;
 
 public:
-    Grid()
-    {
-        size = 10;
-        grid.set_size(size);
-    }
+    Grid() {}
 
     // Initializes the grid with player position, key and door positions, and coins and bombs positions based on current player level
     void initialize_grid(int level)
@@ -1165,7 +1161,10 @@ public:
         switch (level)
         {
         case 1:
-        {
+            // Sets the size of board to 10
+            size = 10;
+            grid.set_size(10);
+
             // Sets the number of coins and bombs to 3
             no_coins = 3;
             no_bombs = 3;
@@ -1173,7 +1172,32 @@ public:
             // Grant 6 undo moves
             player.set_undos(6);
             break;
-        }
+
+        case 2:
+            // Sets the size of board to 15
+            size = 15;
+            grid.set_size(15);
+
+            // Sets the number of coins and bombs to 5
+            no_coins = 5;
+            no_bombs = 5;
+
+            // Grant 2 undo moves
+            player.set_undos(2);
+            break;
+
+        case 3:
+            // Sets the size of board to 20
+            size = 20;
+            grid.set_size(20);
+
+            // Sets the number of coins and bombs to 8
+            no_coins = 8;
+            no_bombs = 8;
+
+            // Grant 1 undo move
+            player.set_undos(1);
+            break;
         }
 
         // Generates a 2D list of given size
@@ -1248,15 +1272,17 @@ public:
 
         // Calculate distance to the door
         int door_distance = 0;
-        dx = abs(player.get_pos().x - door.x);
-        dy = abs(player.get_pos().y - door.y);
+        dx = abs(key.x - door.x);
+        dy = abs(key.y - door.y);
         door_distance = dx + dy;
 
         // Calculate total distance
         int total_distance = key_distance + door_distance;
 
-        // Calculate total moves accorging to total distance and difficulty level
-        int total_moves = total_distance + ((size * size) / (level * level * 5));
+        // Calculate total moves
+        int extra_moves = level == 1 ? 6 : level == 2 ? 2
+                                                      : 0;
+        int total_moves = total_distance + extra_moves;
 
         player.set_moves(total_moves);
     }
