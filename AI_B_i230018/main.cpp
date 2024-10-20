@@ -15,7 +15,16 @@ int main()
     printw("2. Medium\n");
     printw("3. Hard\n");
     printw("Enter number to select: ");
-    int level = (getch() - '0');
+
+    int level = 0;
+
+    do
+    {
+        level = (getch() - '0');
+        if(level < 1 || level > 3)
+            printw("Invalid Input!\nInput again: ");
+    } while (level < 1 || level > 3);
+
     clear();
 
     Game game(level);
