@@ -1209,6 +1209,7 @@ public:
             grid.move_to(i, 0);
         }
 
+
         // Generate position of door
         door.set_pos(rand() % size, rand() % size);
         grid.place_char(door, 'D');
@@ -1251,7 +1252,8 @@ public:
             grid.place_char(bomb, 'B');
         }
 
-        calculate_init_moves(level);
+        calculate_init_moves(level); // Calculates the initial moves given to player according to level
+        hide_cells(level); // Hides all cells except for those around the player
     }
 
     // Sets the size of the grid
@@ -1474,6 +1476,14 @@ public:
         return false;
     }
 
+    // Reveal all cells
+    void reveal_cells()
+    {
+        for (int i = 0; i < size; i++)
+            for (int j = 0; j < size; j++)
+                grid.set_hide(Pos(i, j), false);
+    }
+
     // Revert the grid to original state after the game has ended
     void revert_grid()
     {
@@ -1481,10 +1491,9 @@ public:
             undo_move(true);
 
         grid.place_char(key, 'K');
-        grid.set_hide(key, false);
-        printw("%c\n", grid.get_char(key));
         grid.place_char(door, 'D');
-        grid.set_hide(door, false);
+
+        reveal_cells();
     }
 
     // Game over function
@@ -1499,6 +1508,7 @@ public:
 
         if (message == "Congratulations! You have reached the door!")
             player.calculate_score();
+            
         printw("Score: ");
         printw("%d\n", player.get_score());
         revert_grid();
@@ -1525,6 +1535,24 @@ public:
     {
         if (player.get_moves() == 0)
             game_over("No More Moves!");
+    }
+
+    // Hides all the cells except for around the player, visibility radius depends on the difficulty level
+    void hide_cells(int level)
+    {
+        int visibleRadius = 4 - level;
+
+        for (int i = 0; i < size; i++)
+            for (int j = 0; j < size; j++)
+            {
+                if (i >= player.get_pos().x - visibleRadius && i <= player.get_pos().x + visibleRadius && j >= player.get_pos().y - visibleRadius && j <= player.get_pos().y + visibleRadius)
+                {
+                    if (Pos(i, j) != key && Pos(i, j) != door)
+                        grid.set_hide(Pos(i, j), false);
+                    continue;
+                }
+                grid.set_hide(Pos(i, j), true);
+            }
     }
 
     // Displays the player stats
@@ -1604,6 +1632,8 @@ public:
             grid.undo_move(false);
             break;
         }
+
+        grid.hide_cells(level);
 
         grid.check_collision();
         if (grid.win_game())
