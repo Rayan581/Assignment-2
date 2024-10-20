@@ -49,6 +49,7 @@ This is a terminal-based maze game where the player explores a maze with limited
    ```
 
 ### How to Play
+- The user will be prompted to choose difficulty level before starting the game.
 - After starting the game, the player (`P`) will spawn in the maze.
 ![Game Start](AI_B_i230018/screenshots/game-start.png)
 
