@@ -61,10 +61,6 @@ This is a terminal-based maze game where the player explores a maze with limited
 - There are bombs scattered in the maze. Avoid them or touching them will cause you to lose the game.
 ![Hitting Bomb](AI_B_i230018/screenshots/hit-bomb.png)
 
-
-### License
-This project is open-source and available under the MIT License.
-
 ---
 
 ### Example Output
