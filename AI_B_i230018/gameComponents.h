@@ -1362,7 +1362,6 @@ public:
 
         if (player.get_pos().y + 1 < size)
         {
-            cout << "Hello" << endl;
             if (player.get_pos().x == player.get_last_move_pos().x && player.get_pos().y + 1 == player.get_last_move_pos().y)
                 return false;
 
@@ -1437,7 +1436,7 @@ public:
     // Undo the last move
     void undo_move(bool gameOver)
     {
-        if (player.get_undos() > 0 || gameOver || 1)
+        if (player.get_undos() > 0 || gameOver)
         {
             Pos previous = player.pop_last_move_pos();
 
