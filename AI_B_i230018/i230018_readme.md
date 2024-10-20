@@ -3,7 +3,7 @@
 ### Description
 This is a terminal-based maze game where the player explores a maze with limited visibility, adding a fog-of-war effect. The player can move around the maze using the arrow keys and can only see a few tiles around their current position. The goal is to explore the maze while avoiding traps, solving puzzles, and potentially reaching an exit.
 
-![Maze Game Overview](screenshots/maze-overview.png)
+![Maze Game Overview](screenshots/game-start.png)
 
 ### Features
 - **Fog of War**: The player can only see tiles within a certain radius, making the game more mysterious and immersive.
