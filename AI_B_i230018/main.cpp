@@ -17,18 +17,17 @@ int main()
     printw("Enter number to select: ");
 
     int level = 0;
-
     do
     {
         level = (getch() - '0');
-        if(level < 1 || level > 3)
+        if (level < 1 || level > 3)
             printw("Invalid Input!\nInput again: ");
-    } while (level < 1 || level > 3);
+    } while (level < 1 || level > 3); // Input again if the input is invalid
 
     clear();
 
     Game game(level);
-    game.game_loop();
+    game.game_loop(); // Run the main game loop
 
     getch();
     endwin();
